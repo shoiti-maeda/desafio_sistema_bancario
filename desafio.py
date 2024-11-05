@@ -18,14 +18,20 @@ def funcao_deposito():
     global saldo
     global extrato
     global valor_deposito
-   
+    valor_deposito=0
     valor_deposito += float(input("Digite o valor do depósito: R$"))
-    saldo += valor_deposito
-    print(f""" 
-                   Depósito Efetuado
-              Saldo atual é de R${saldo:.2f}
-           """)
-    extrato += (f"Depósito               R${valor_deposito:.2f}\n")
+    if valor_deposito <=0:
+        print(f""" 
+                        Valor inválido.
+                    Operação não realizada.
+             """)
+    else:
+        saldo += valor_deposito
+        print(f""" 
+                    Depósito Efetuado
+                Saldo atual é de R${saldo:.2f}
+            """)
+        extrato += (f"Depósito               R${valor_deposito:.2f}\n")
 
 
 def funcao_extrato():
@@ -55,7 +61,7 @@ def funcao_saque():
         
             
 
-    elif valor_saque >= saldo:
+    elif valor_saque > saldo:
         print(f""" 
                       Operação inválida.
                     Valor excede o saldo.
