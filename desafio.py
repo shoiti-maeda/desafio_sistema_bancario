@@ -104,4 +104,6 @@ while True:
 
     elif opcao == "q":
         break
+    else: 
+        print("Operação inválida, por favor selecione umas das operações indicadas.")
 
