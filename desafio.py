@@ -58,8 +58,12 @@ def funcao_saque():
                     Limite de saque: R${limite:.2f}
             """)
             
-        
-            
+    elif valor_saque<=0:    
+         print(f""" 
+                      Valor inválido.
+                     Operação não realizada.
+                    Saldo Atual: R${saldo:.2f}
+            """)   
 
     elif valor_saque > saldo:
         print(f""" 
