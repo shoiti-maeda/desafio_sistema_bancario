@@ -7,19 +7,13 @@ menu="""
 
 saldo = 0.0
 limite = 500.0
-extrato = "Tipo da Op. ========== Valor\n"
+extrato = "" 
 numero_saques = 0
 LIMITE_SAQUES = 3
-limite_saques_restantes = LIMITE_SAQUES
-valor_saque = 0.0
-valor_deposito = 0.0
+saques_restantes = LIMITE_SAQUES
 
-def funcao_deposito():
-    global saldo
-    global extrato
-    global valor_deposito
-    valor_deposito=0
-    valor_deposito += float(input("Digite o valor do depósito: R$"))
+def funcao_deposito(valor_deposito,saldo):
+        
     if valor_deposito <=0:
         print(f""" 
                         Valor inválido.
@@ -31,26 +25,28 @@ def funcao_deposito():
                     Depósito Efetuado
                 Saldo atual é de R${saldo:.2f}
             """)
-        extrato += (f"Depósito               R${valor_deposito:.2f}\n")
+        extrato =""
+        extrato += (f"Depósito                   R${valor_deposito:.2f}\n")
+    
+    return saldo , extrato
 
 
-def funcao_extrato():
-    global extrato
-    print(extrato)
-    print(f"""===================================
-Saldo                  R${saldo:.2f}""")
+def funcao_extrato(extrato,saldo):
+    if extrato is "":
+        print(f""" ===================================
+ Não foram detectadas movimentações.
+ =================================== """)
+    else:
+        print(extrato)
+        print(f"""===================================
+Saldo                      R${saldo:.2f}""")
     
     
     
 
-def funcao_saque():
-    global saldo
-    global extrato
-    global numero_saques
-    global valor_saque
-    global limite_saques_restantes
-    valor_saque = 0.0
-    valor_saque += float(input("Digite o valor do saque: R$"))
+def funcao_saque(valor_saque, saldo,numero_saques,saques_restantes):
+    
+    
     if valor_saque >500:
         print(f""" 
                         Operação inválida.
@@ -75,13 +71,16 @@ def funcao_saque():
     else:
         saldo-=valor_saque
         numero_saques+=1
-        limite_saques_restantes -=1
+        saques_restantes -=1
         print(f""" 
                         Saque realizado.
-                Quantidade de saques restantes:{limite_saques_restantes}.
+                Quantidade de saques restantes:{saques_restantes}.
                     Saldo atual: R${saldo:.2f}
             """)
-        extrato += (f"Saque                  R${valor_saque:.2f}\n")
+        extrato=""
+        extrato += (f"Saque                      R${valor_saque:.2f}\n")
+
+        return saldo, numero_saques, saques_restantes, extrato 
 
     
 while True:
@@ -89,7 +88,12 @@ while True:
 
     if opcao == "d":
         print("Depósito")
-        funcao_deposito()
+        valor_deposito =0
+        valor_deposito += float(input("Digite o valor do depósito: R$"))
+        resultado_deposito = funcao_deposito(valor_deposito,saldo=saldo)
+        saldo=resultado_deposito[0]
+        extrato+=resultado_deposito[1]
+
 
     elif opcao == "s":
         print("Saque")
@@ -100,11 +104,18 @@ while True:
                 Quantidade de saques diários: {LIMITE_SAQUES}
            """)
             continue
-        funcao_saque()
+        valor_saque = 0.0
+        valor_saque += float(input("Digite o valor do saque: R$"))
+        resultado_saque = funcao_saque(valor_saque, saldo,numero_saques,saques_restantes)
+        saldo=resultado_saque[0]
+        numero_saques=resultado_saque[1]
+        saques_restantes=resultado_saque[2]
+        extrato+=resultado_saque[3]
     
     elif opcao == "e":
-        print("Extrato")
-        funcao_extrato()
+        print("               Extrato")
+        print("Tipo da Op. =============== Valor\n")
+        funcao_extrato(extrato,saldo)
 
     elif opcao == "q":
         break
