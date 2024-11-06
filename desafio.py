@@ -12,7 +12,7 @@ numero_saques = 0
 LIMITE_SAQUES = 3
 saques_restantes = LIMITE_SAQUES
 
-def funcao_deposito(valor_deposito,saldo):
+def funcao_deposito(valor_deposito,saldo,/):
         
     if valor_deposito <=0:
         print(f""" 
@@ -31,7 +31,7 @@ def funcao_deposito(valor_deposito,saldo):
     return saldo , extrato
 
 
-def funcao_extrato(extrato,saldo):
+def funcao_extrato(saldo,/,*,extrato):
     if extrato is "":
         print(f""" ===================================
  Não foram detectadas movimentações.
@@ -44,7 +44,7 @@ Saldo                      R${saldo:.2f}""")
     
     
 
-def funcao_saque(valor_saque, saldo,numero_saques,saques_restantes):
+def funcao_saque(*,valor_saque, saldo,numero_saques,saques_restantes):
     
     
     if valor_saque >500:
@@ -90,7 +90,7 @@ while True:
         print("Depósito")
         valor_deposito =0
         valor_deposito += float(input("Digite o valor do depósito: R$"))
-        resultado_deposito = funcao_deposito(valor_deposito,saldo=saldo)
+        resultado_deposito = funcao_deposito(valor_deposito,saldo)
         saldo=resultado_deposito[0]
         extrato+=resultado_deposito[1]
 
@@ -106,7 +106,7 @@ while True:
             continue
         valor_saque = 0.0
         valor_saque += float(input("Digite o valor do saque: R$"))
-        resultado_saque = funcao_saque(valor_saque, saldo,numero_saques,saques_restantes)
+        resultado_saque = funcao_saque(valor_saque=valor_saque, saldo=saldo,numero_saques=numero_saques,saques_restantes=saques_restantes)
         saldo=resultado_saque[0]
         numero_saques=resultado_saque[1]
         saques_restantes=resultado_saque[2]
@@ -115,7 +115,7 @@ while True:
     elif opcao == "e":
         print("               Extrato")
         print("Tipo da Op. =============== Valor\n")
-        funcao_extrato(extrato,saldo)
+        funcao_extrato(saldo,extrato=extrato)
 
     elif opcao == "q":
         break
