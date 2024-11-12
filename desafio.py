@@ -1,8 +1,19 @@
-menu="""  
+menu_principal="""  
+[c] Menu Cliente 
+[o] Menu Operações
+[q] sair
+==> """
+
+menu_conta="""  
 [d] Depositar 
 [s] Sacar
 [e] Extrato
-[q] Sair
+[q] Voltar
+==> """
+menu_usuario="""  
+[n] Novo Cliente 
+[c] Nova Conta
+[q] Voltar
 ==> """
 
 saldo = 0.0
@@ -11,6 +22,11 @@ extrato = ""
 numero_saques = 0
 LIMITE_SAQUES = 3
 saques_restantes = LIMITE_SAQUES
+clientes=[]
+contas={}
+AGENCIA="001"
+numero_conta=1
+
 
 def funcao_deposito(valor_deposito,saldo,/):
         
@@ -41,10 +57,7 @@ def funcao_extrato(saldo,/,*,extrato):
         print(f"""===================================
 Saldo                      R${saldo:.2f}""")
     
-    
-    
-
-def funcao_saque(*,valor_saque, saldo,numero_saques,saques_restantes):
+def funcao_saque(*,valor_saque, saldo,numero_saques,saques_restantes,limite):
     
     
     if valor_saque >500:
@@ -82,43 +95,166 @@ def funcao_saque(*,valor_saque, saldo,numero_saques,saques_restantes):
 
         return saldo, numero_saques, saques_restantes, extrato 
 
+def limpar_cpf(cpf): 
+    cpf_limpo = "" 
+    for char in cpf: 
+        if char.isdigit(): 
+            cpf_limpo += char 
+    return cpf_limpo
+
+def receber_data_nascimento(): 
+    while True: 
+        data_nascimento_input = input("Digite sua data de nascimento (dd/mm/yyyy): ")
+        if len(data_nascimento_input) == 10 and data_nascimento_input[2] == '/' and data_nascimento_input[5] == '/': 
+            dia, mes, ano = data_nascimento_input.split('/') 
+            if dia.isdigit() and mes.isdigit() and ano.isdigit(): 
+                dia = int(dia) 
+                mes = int(mes) 
+                ano = int(ano) 
+                if 1 <= dia <= 31 and 1 <= mes <= 12: 
+                    print("Data válida!") 
+                    return data_nascimento_input 
+                else: 
+                    print("Dia ou mês inválido. Tente novamente.") 
+            else: 
+                print("Data inválida. Certifique-se de usar apenas números no formato dd/mm/yyyy.") 
+        else: 
+            print("Formato inválido. Use o formato dd/mm/yyyy.")
+            
+def receber_endereco():
+    print("Informe o endereço do cliente:")
+    logradouro=input("Logradouro:")
+    numero=input("Número:")
+    bairro=input("Bairro:")
+    cidade=input("Cidade:")
+    estado=input("Estado:")
+    endereco=[f"{logradouro},{numero}-{bairro}-{cidade}/{estado}"]
+    print(endereco)
+    return endereco
+
+def receber_nome():
+    nome=input("Digite o seu nome completo:")
+    return nome
     
-while True:
-    opcao = input(menu)
+def cadastrar_clientes(clientes):
+    cpf_input = input("Digite o número do seu CPF:")
+    if cpf_input=="":
+        print("CPF INVÁLIDO - Por favor informe um CPF.")
+    else:
+        cpf_limpo = limpar_cpf(cpf_input)
+        print(f"cpf limpo: {cpf_limpo}")
 
-    if opcao == "d":
-        print("Depósito")
-        valor_deposito =0
-        valor_deposito += float(input("Digite o valor do depósito: R$"))
-        resultado_deposito = funcao_deposito(valor_deposito,saldo)
-        saldo=resultado_deposito[0]
-        extrato+=resultado_deposito[1]
+        for cliente in clientes:
+            print("pesquisando...")
+            print(cliente[0])
+            if cliente[0] == cpf_limpo:
+                print("Cliente já cadastrado.")
+                return clientes
 
+        # Se o CPF não estiver cadastrado, adicionar o novo cliente
+        nome = receber_nome()
+        data_de_nascimento = receber_data_nascimento()
+        endereco = receber_endereco()
+        clientes.append([cpf_limpo, nome, data_de_nascimento, endereco])
+        print(clientes)
+        return clientes
 
-    elif opcao == "s":
-        print("Saque")
-        if numero_saques == LIMITE_SAQUES:
-            print(f""" 
-                       Operação inválida.
-              Quantidade de saques diária atingida.
-                Quantidade de saques diários: {LIMITE_SAQUES}
-           """)
-            continue
-        valor_saque = 0.0
-        valor_saque += float(input("Digite o valor do saque: R$"))
-        resultado_saque = funcao_saque(valor_saque=valor_saque, saldo=saldo,numero_saques=numero_saques,saques_restantes=saques_restantes)
-        saldo=resultado_saque[0]
-        numero_saques=resultado_saque[1]
-        saques_restantes=resultado_saque[2]
-        extrato+=resultado_saque[3]
+def validar_cliente(clientes,cpf):
+    cpf_limpo = limpar_cpf(cpf)
     
-    elif opcao == "e":
-        print("               Extrato")
-        print("Tipo da Op. =============== Valor\n")
-        funcao_extrato(saldo,extrato=extrato)
+    for cliente in clientes:
+        print(cpf[0])
+        if cliente[0] == cpf_limpo:
+            print("Cliente encontrado.")
+            return cpf_limpo
+        
+    print("cliente não localizado")
+    return ("erro")
 
-    elif opcao == "q":
-        break
-    else: 
-        print("Operação inválida, por favor selecione umas das operações indicadas.")
+def criar_conta(cpf, numero_conta):
+    mensagem = f"Conta {AGENCIA}-{numero_conta} criada para o CPF: {cpf}"
+    # Verificar se o CPF já existe no dicionário
+    if cpf in contas:
+        # Adicionar uma nova conta ao CPF existente
+        outra_conta = f"conta_{len(contas[cpf]) + 1}"
+        contas[cpf][outra_conta] = f"{AGENCIA}-{numero_conta}"
+    else:
+        # Criar uma nova entrada para o CPF
+        contas[cpf] = {f"conta_1": f"{AGENCIA}-{numero_conta}"}
+    
+    print(mensagem)
+    return numero_conta
+
+def menu_operacoes(extrato, saldo, numero_saques, saques_restantes,limite): 
+    while True:
+        opcao = input(menu_conta)
+
+        if opcao == "d":
+            print("Depósito")
+            valor_deposito =0
+            valor_deposito += float(input("Digite o valor do depósito: R$"))
+            resultado_deposito = funcao_deposito(valor_deposito,saldo)
+            saldo=resultado_deposito[0]
+            extrato+=resultado_deposito[1]
+        elif opcao == "s":
+            print("Saque")
+            if numero_saques == LIMITE_SAQUES:
+                print(f""" 
+                        Operação inválida.
+                Quantidade de saques diária atingida.
+                    Quantidade de saques diários: {LIMITE_SAQUES}
+            """)
+                continue
+            valor_saque = 0.0
+            valor_saque += float(input("Digite o valor do saque: R$"))
+            resultado_saque = funcao_saque(valor_saque=valor_saque,saldo=saldo,numero_saques=numero_saques,saques_restantes=saques_restantes,limite=limite)
+            if resultado_saque == None:
+                continue
+            else:
+                saldo=resultado_saque[0]
+                numero_saques=resultado_saque[1]
+                saques_restantes=resultado_saque[2]
+                extrato+=resultado_saque[3]
+        elif opcao == "e":
+            print("               Extrato")
+            print("Tipo da Op. =============== Valor\n")
+            funcao_extrato(saldo,extrato=extrato)
+        elif opcao == "q":
+            break
+        else: 
+            print("Operação inválida, por favor selecione umas das operações indicadas.")
+            
+def menu_cliente():
+    global numero_conta
+    while True:
+        opcao = input(menu_usuario)
+        if opcao == "n":
+            cadastrar_clientes(clientes)
+        elif opcao == "c":
+            cpf_cliente_selecionado=input("Informe o CPF do cliente:")
+            validar=validar_cliente(clientes,cpf_cliente_selecionado)
+            if validar == "erro":
+                print("cpf não localizado.")    
+            else:
+                criar_conta(validar,numero_conta)
+                numero_conta+=1    
+        elif opcao == "q":
+            break
+                     
+def menu_inicial():
+    
+    while True:
+        #print(menu_principal)
+        opcao = input(menu_principal)
+        if opcao == "c":
+            menu_cliente()
+        elif opcao == "o":
+            menu_operacoes(extrato, saldo,numero_saques,saques_restantes,limite)
+        elif opcao == "q":
+            break
+        else:
+            print("Opção inválida, selecione uma opção válida.")
+
+        
+menu_inicial()
 
