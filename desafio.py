@@ -369,9 +369,15 @@ def criar_conta(cpf,numero_conta):
 def menu_operacoes(): 
     while True:
         opcao = input(menu_conta)
+        opcao = opcao.lower()
 
         if opcao == "d":
             print("Depósito")
+            cliente=selecionar_cliente(input("Informe o CPF do cliente:"))
+            numero_conta=int(input("Informe o número da conta:"))
+            conta = contas[(numero_conta)-1]
+            valor=float(input("Informe o valor do depósito:"))
+            cliente.realizar_transacao(conta, Deposito(valor))
             #valor_deposito =0
             #valor_deposito += float(input("Digite o valor do depósito: R$"))
             #resultado_deposito = funcao_deposito(valor_deposito,saldo)
@@ -397,10 +403,14 @@ def menu_operacoes():
             #    saques_restantes=resultado_saque[2]
             #    extrato+=resultado_saque[3]
         elif opcao == "e":
-            #print("               Extrato")
-            #print("Tipo da Op. =============== Valor\n")
-            #funcao_extrato(saldo,extrato=extrato)
-            print("Histórico para fazer")
+            cliente=selecionar_cliente(input("Informe o CPF do cliente:"))
+            numero_conta=int(input("Informe o número da conta:"))
+            conta = contas[(numero_conta)-1]
+            
+            print(f"Número da conta: {conta.numero}, Agência: {AGENCIA}, Saldo: {conta.obter_saldo()}")    
+            for transacao in conta.historico.transacoes:
+                print(f"Transação: {type(transacao).__name__} de {transacao.valor}")
+            
         elif opcao == "l":
             listar_contas()
         elif opcao == "q":
@@ -412,6 +422,7 @@ def menu_cliente():
     global numero_conta
     while True:
         opcao = input(menu_usuario)
+        opcao = opcao.lower()
         if opcao == "n":
             cadastrar_clientes(clientes)
         elif opcao == "c":
@@ -428,12 +439,15 @@ def menu_cliente():
              
         elif opcao == "q":
             break
+        else:
+                print("Opção inválida, selecione uma opção válida.")
                      
 def menu_inicial():
     
     while True:
         #print(menu_principal)
         opcao = input(menu_principal)
+        opcao = opcao.lower()
         if opcao == "c":
             menu_cliente()
         elif opcao == "o":
@@ -444,9 +458,9 @@ def menu_inicial():
         else:
             print("Opção inválida, selecione uma opção válida.")
 
-clientes.append(PessoaFisica(endereco=["Rua tatata,80 - Vila 1 -São Paulo/SP"], cpf="20020020020", nome="Tatu", data_nascimento="10/10/1010"))
-clientes.append(PessoaFisica(endereco=["Rua tatutua,90 - Vila 2 -São Paulo/SP"], cpf="10010010010", nome="Tata", data_nascimento="10/10/1010"))
-clientes.append(PessoaFisica(endereco=["Rua tututua,10 - Vila 3 -São Paulo/SP"], cpf="00000000000", nome="Tata", data_nascimento="10/10/1010"))
+clientes.append(PessoaFisica(endereco=["Rua tatata,80 - Vila 1 -São Paulo/SP"], cpf="20020020020", nome="Primeiro", data_nascimento="10/10/1010"))
+clientes.append(PessoaFisica(endereco=["Rua tatutua,90 - Vila 2 -São Paulo/SP"], cpf="10010010010", nome="Segundo", data_nascimento="10/10/1010"))
+clientes.append(PessoaFisica(endereco=["Rua tututua,10 - Vila 3 -São Paulo/SP"], cpf="00000000000", nome="Terceiro", data_nascimento="10/10/1010"))
 
 
 contas.append(ContaCorrente(saldo=0.0,numero = 1,agencia=AGENCIA,cliente=clientes[0], limite=limite,numero_saques=numero_saques))
@@ -454,19 +468,29 @@ contas.append(ContaCorrente(saldo=0.0,numero = 2,agencia=AGENCIA,cliente=cliente
 contas.append(ContaCorrente(saldo=0.0,numero = 3,agencia=AGENCIA,cliente=clientes[2], limite=limite,numero_saques=numero_saques))
 contas.append(ContaCorrente(saldo=0.0,numero = 4,agencia=AGENCIA,cliente=clientes[1], limite=limite,numero_saques=numero_saques))
 
+clientes[0].realizar_transacao(contas[0], Deposito(500.0))
+clientes[0].realizar_transacao(contas[0], Deposito(1500.0))
+clientes[0].realizar_transacao(contas[0], Deposito(2500.0))
+
 def selecionar_cliente(cpf):
     for cliente in clientes:     
         #print(f"{index}: {cliente}")
         cpf_limpo=validar_cliente(clientes,cpf)
         if cliente.cpf == cpf_limpo:
             return (cliente)
+def selecionar_conta(numero_conta):
+    for conta in contas:     
+        if conta.numero == numero_conta:
+            print(conta)
+            return (conta)
+    
 def listar_clientes():
     for cliente in clientes: 
         print(cliente)
 def listar_contas():
     print("listar contas:")
-    for conta in contas: 
-        print(conta)
+    for indice,conta in enumerate(contas): 
+        print(f"{indice}: {conta}")
     
        
 menu_inicial()
