@@ -74,12 +74,15 @@ class Conta:
         return False
 
     def depositar(self, valor):
-        if valor > 0:
-            self._saldo += valor
-            #print("\n=== Depósito realizado com sucesso! ===")
-        else:
+        if valor <= 0 or valor =="":
             print("\n@@@ Operação falhou! O valor informado é inválido. @@@")
             return False
+           #self._saldo += valor
+            #print("\n=== Depósito realizado com sucesso! ===")
+        else:
+            self._saldo += valor
+            #print("\n=== Depósito realizado com sucesso! ===")
+            
 
         return True
 
@@ -179,6 +182,13 @@ class Deposito(Transacao):
         if sucesso_transacao:
             conta.historico.adicionar_transacao(self)
 
+def validar_valor(valor):
+    if valor=="":
+        print("Valor inválido")
+        return 0
+    valor=float(valor)
+    return(valor)
+
 def log_transacao(func):
     @functools.wraps(func)
     def envelope(*args,**kwargs):
@@ -217,7 +227,7 @@ def menu():
 
 def menu_extrato():
     menu = """\n
-    ================ MENU ================
+    ================ OPÇÕES DE EXTRATO ================
     [d]\tDepositos
     [s]\tSaques
     [t]\tTodas movimentações
@@ -256,7 +266,10 @@ def operacao(clientes,opcao):
         
 @log_transacao 
 def depositar(cliente):
-    valor = float(input("Informe o valor do depósito: "))
+    #valor = input("Informe o valor do depósito: ")
+    
+    valor=(validar_valor(input("Informe o valor do depósito: ")))
+    
     transacao = Deposito(valor)
 
     conta = recuperar_conta_cliente(cliente)
@@ -267,7 +280,9 @@ def depositar(cliente):
 
 @log_transacao
 def sacar(cliente):
-    valor = float(input("Informe o valor do saque: "))
+    valor=(validar_valor(input("Informe o valor do saque: ")))
+    #valor = input("Informe o valor do saque: ")
+    
     transacao = Saque(valor)
 
     conta = recuperar_conta_cliente(cliente)
@@ -289,28 +304,33 @@ def exibir_extrato(clientes):
     if not conta:
         return
     
-    print("\n================ EXTRATO ================")
-    
     transacoes = conta.historico.transacoes
     obter_transacoes = conta.historico.obter_transacoes
-    
+    cabecalho="\n================ EXTRATO ================"
     if not transacoes:
+        print(cabecalho)
         print("Não foram realizadas movimentações.")
     else:
         opcao=menu_extrato()
         match opcao:
             case "d":
-               print("\nApenas depósitos:") 
-               for transacao in obter_transacoes(tipo=Deposito):
+                print(cabecalho)
+                print("\nApenas depósitos:") 
+                for transacao in obter_transacoes(tipo=Deposito):
                     print(f"\n{transacao['tipo']}:\n\tR$ {transacao['valor']:.2f} \t{transacao['data']}")
             case "s":
+                print(cabecalho)
                 print("\nApenas saques:") 
                 for transacao in obter_transacoes(tipo=Saque): 
                     print(f"\n{transacao['tipo']}:\n\tR$ {transacao['valor']:.2f} \t{transacao['data']}")
             case "t":
+                print(cabecalho)
                 print("Todas as transações:") 
                 for transacao in obter_transacoes(): 
                     print(f"\n{transacao['tipo']}:\n\tR$ {transacao['valor']:.2f} \t{transacao['data']}")
+            case _:
+                print("\n@@@ Operação inválida, por favor selecione novamente a operação desejada. @@@")
+
         
     
     print(f"\nSaldo:\n\tR$ {conta.saldo:.2f}")
@@ -370,28 +390,31 @@ def main():
 
     while True:
         opcao = menu()
+        match opcao:
 
-        if opcao == "d" or opcao =="s":
-            operacao(clientes, opcao)
+            case "d":
+                operacao(clientes, opcao)
+            case "s":
+                operacao(clientes, opcao)
 
-        elif opcao == "e":
-            exibir_extrato(clientes)
+            case "e":
+                exibir_extrato(clientes)
 
-        elif opcao == "nu":
-            criar_cliente(clientes)
+            case "nu":
+                criar_cliente(clientes)
 
-        elif opcao == "nc":
-            numero_conta = len(contas) + 1
-            criar_conta(numero_conta, clientes, contas)
+            case "nc":
+                numero_conta = len(contas) + 1
+                criar_conta(numero_conta, clientes, contas)
 
-        elif opcao == "lc":
-            listar_contas(contas)
+            case "lc":
+                listar_contas(contas)
 
-        elif opcao == "q":
-            break
+            case "q":
+                break
 
-        else:
-            print("\n@@@ Operação inválida, por favor selecione novamente a operação desejada. @@@")
+            case _:
+                print("\n@@@ Operação inválida, por favor selecione novamente a operação desejada. @@@")
 
     
     
