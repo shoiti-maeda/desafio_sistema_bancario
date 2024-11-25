@@ -10,6 +10,10 @@ class Cliente:
         self.contas = []
 
     def realizar_transacao(self, conta, transacao):
+        if len(conta.historico.transacoes_do_dia()) >=10:
+            print("\n *** Você excedeu o número de transações permitidas para hoje ! ***")
+            return
+        
         transacao.registrar(conta)
 
     def adicionar_conta(self, conta):
@@ -117,8 +121,25 @@ class ContaCorrente(Conta):
             Agência:\t{self.agencia}
             C/C:\t\t{self.numero}
             Titular:\t{self.cliente.nome}
+            Saldo: \tR$ {self.saldo}
         """
 
+class ContaIterador:
+    def __init__(self, contas:list) -> None:
+        self.contas=contas
+        self.contador=0
+        
+    def __iter__(self):
+        return self
+    
+    def __next__(self):
+        try:
+            conta = self.contas[self.contador]
+            self.contador += 1
+            return conta 
+        except IndexError:
+            raise StopIteration
+    
 
 class Historico:
     def __init__(self):
@@ -141,6 +162,15 @@ class Historico:
         for transacao in self._transacoes:
             if tipo is None or transacao["tipo"] == tipo.__name__:
                 yield transacao
+                
+    def transacoes_do_dia(self):
+        data_atual = datetime.now().date()
+        transacoes = []
+        for transacao in self._transacoes:
+            data_transacao= datetime.strptime(transacao["data"],"%d-%m-%Y %H:%M:%S").date()
+            if data_atual== data_transacao:
+                transacoes.append(transacao)
+        return transacoes
 
 class Transacao(ABC):
     @property
@@ -200,11 +230,11 @@ def log_transacao(func):
                 case "criar_cliente":
                     return "Criação de novo cliente concluído"
                 case "exibir_extrato":
-                    return "Extrato emitido"
+                    return "Extrato "
                 case "sacar":
-                    return "Saque realizado"
+                    return "Saque "
                 case "depositar":
-                    return "Depósito realizado"
+                    return "Depósito "
         print("\n")
         print("=" *60)
         print(f"{nome_operacao(func.__name__)} em: {datetime.now().strftime("%d-%m-%Y %H:%M:%S")}")
@@ -311,29 +341,31 @@ def exibir_extrato(clientes):
         print(cabecalho)
         print("Não foram realizadas movimentações.")
     else:
-        opcao=menu_extrato()
-        match opcao:
-            case "d":
-                print(cabecalho)
-                print("\nApenas depósitos:") 
-                for transacao in obter_transacoes(tipo=Deposito):
-                    print(f"\n{transacao['tipo']}:\n\tR$ {transacao['valor']:.2f} \t{transacao['data']}")
-            case "s":
-                print(cabecalho)
-                print("\nApenas saques:") 
-                for transacao in obter_transacoes(tipo=Saque): 
-                    print(f"\n{transacao['tipo']}:\n\tR$ {transacao['valor']:.2f} \t{transacao['data']}")
-            case "t":
-                print(cabecalho)
-                print("Todas as transações:") 
-                for transacao in obter_transacoes(): 
-                    print(f"\n{transacao['tipo']}:\n\tR$ {transacao['valor']:.2f} \t{transacao['data']}")
-            case _:
-                print("\n@@@ Operação inválida, por favor selecione novamente a operação desejada. @@@")
+        while True:
+            opcao=menu_extrato()
+            match opcao:
+                case "d":
+                    print(cabecalho)
+                    print("\nApenas depósitos:") 
+                    for transacao in obter_transacoes(tipo=Deposito):
+                        print(f"\n{transacao['tipo']}:\n\tR$ {transacao['valor']:.2f} \t{transacao['data']}")
+                case "s":
+                    print(cabecalho)
+                    print("\nApenas saques:") 
+                    for transacao in obter_transacoes(tipo=Saque): 
+                        print(f"\n{transacao['tipo']}:\n\tR$ {transacao['valor']:.2f} \t{transacao['data']}")
+                case "t":
+                    print(cabecalho)
+                    print("Todas as transações:") 
+                    for transacao in obter_transacoes(): 
+                        print(f"\n{transacao['tipo']}:\n\tR$ {transacao['valor']:.2f} \t{transacao['data']}")
+                case "q":
+                    break
+                case _:
+                    print("\n@@@ Operação inválida, por favor selecione novamente   a operação desejada. @@@")
 
-        
     
-    print(f"\nSaldo:\n\tR$ {conta.saldo:.2f}")
+            print(f"\nSaldo:\n\tR$ {conta.saldo:.2f}")
     #print("==========================================")
 
 @log_transacao
@@ -372,8 +404,11 @@ def criar_conta(numero_conta, clientes, contas):
 
 
 def listar_contas(contas):
-    for conta in contas:
-        print("=" * 100)
+    #for conta in contas:
+    #    print("=" * 100)
+    #    print(textwrap.dedent(str(conta)))
+    for conta in ContaIterador(contas):
+        print("=" * 70)
         print(textwrap.dedent(str(conta)))
 
 
