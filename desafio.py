@@ -1,6 +1,7 @@
 import textwrap
 from abc import ABC, abstractmethod
 from datetime import datetime
+import functools
 
 
 class Cliente:
@@ -64,7 +65,7 @@ class Conta:
 
         elif valor > 0:
             self._saldo -= valor
-            print("\n=== Saque realizado com sucesso! ===")
+            #print("\n=== Saque realizado com sucesso! ===")
             return True
 
         else:
@@ -75,7 +76,7 @@ class Conta:
     def depositar(self, valor):
         if valor > 0:
             self._saldo += valor
-            print("\n=== Depósito realizado com sucesso! ===")
+            #print("\n=== Depósito realizado com sucesso! ===")
         else:
             print("\n@@@ Operação falhou! O valor informado é inválido. @@@")
             return False
@@ -133,6 +134,10 @@ class Historico:
             }
         )
 
+    def obter_transacoes(self, tipo=None):
+        for transacao in self._transacoes:
+            if tipo is None or transacao["tipo"] == tipo.__name__:
+                yield transacao
 
 class Transacao(ABC):
     @property
@@ -174,6 +179,28 @@ class Deposito(Transacao):
         if sucesso_transacao:
             conta.historico.adicionar_transacao(self)
 
+def log_transacao(func):
+    @functools.wraps(func)
+    def envelope(*args,**kwargs):
+        func(*args, **kwargs)
+        def nome_operacao(nome_func):
+            match nome_func:
+                case "criar_conta":
+                    return "Criação de nova conta concluído"
+                case "criar_cliente":
+                    return "Criação de novo cliente concluído"
+                case "exibir_extrato":
+                    return "Extrato emitido"
+                case "sacar":
+                    return "Saque realizado"
+                case "depositar":
+                    return "Depósito realizado"
+        print("\n")
+        print("=" *60)
+        print(f"{nome_operacao(func.__name__)} em: {datetime.now().strftime("%d-%m-%Y %H:%M:%S")}")
+        print("=" *60)   
+    return envelope
+    
 
 def menu():
     menu = """\n
@@ -184,6 +211,16 @@ def menu():
     [nc]\tNova conta
     [lc]\tListar contas
     [nu]\tNovo usuário
+    [q]\tSair
+    => """
+    return input(textwrap.dedent(menu))
+
+def menu_extrato():
+    menu = """\n
+    ================ MENU ================
+    [d]\tDepositos
+    [s]\tSaques
+    [t]\tTodas movimentações
     [q]\tSair
     => """
     return input(textwrap.dedent(menu))
@@ -217,7 +254,7 @@ def operacao(clientes,opcao):
     elif opcao =="s":
         sacar(cliente)
         
- 
+@log_transacao 
 def depositar(cliente):
     valor = float(input("Informe o valor do depósito: "))
     transacao = Deposito(valor)
@@ -228,7 +265,7 @@ def depositar(cliente):
 
     cliente.realizar_transacao(conta, transacao)
 
-
+@log_transacao
 def sacar(cliente):
     valor = float(input("Informe o valor do saque: "))
     transacao = Saque(valor)
@@ -239,7 +276,7 @@ def sacar(cliente):
 
     cliente.realizar_transacao(conta, transacao)
 
-
+@log_transacao
 def exibir_extrato(clientes):
     cpf = input("Informe o CPF do cliente: ")
     cliente = filtrar_cliente(cpf, clientes)
@@ -251,22 +288,35 @@ def exibir_extrato(clientes):
     conta = recuperar_conta_cliente(cliente)
     if not conta:
         return
-
+    
     print("\n================ EXTRATO ================")
+    
     transacoes = conta.historico.transacoes
-
-    extrato = ""
+    obter_transacoes = conta.historico.obter_transacoes
+    
     if not transacoes:
-        extrato = "Não foram realizadas movimentações."
+        print("Não foram realizadas movimentações.")
     else:
-        for transacao in transacoes:
-            extrato += f"\n{transacao['tipo']}:\n\tR$ {transacao['valor']:.2f}"
-
-    print(extrato)
+        opcao=menu_extrato()
+        match opcao:
+            case "d":
+               print("\nApenas depósitos:") 
+               for transacao in obter_transacoes(tipo=Deposito):
+                    print(f"\n{transacao['tipo']}:\n\tR$ {transacao['valor']:.2f} \t{transacao['data']}")
+            case "s":
+                print("\nApenas saques:") 
+                for transacao in obter_transacoes(tipo=Saque): 
+                    print(f"\n{transacao['tipo']}:\n\tR$ {transacao['valor']:.2f} \t{transacao['data']}")
+            case "t":
+                print("Todas as transações:") 
+                for transacao in obter_transacoes(): 
+                    print(f"\n{transacao['tipo']}:\n\tR$ {transacao['valor']:.2f} \t{transacao['data']}")
+        
+    
     print(f"\nSaldo:\n\tR$ {conta.saldo:.2f}")
-    print("==========================================")
+    #print("==========================================")
 
-
+@log_transacao
 def criar_cliente(clientes):
     cpf = input("Informe o CPF (somente número): ")
     cliente = filtrar_cliente(cpf, clientes)
@@ -283,9 +333,9 @@ def criar_cliente(clientes):
 
     clientes.append(cliente)
 
-    print("\n=== Cliente criado com sucesso! ===")
+    #print("\n=== Cliente criado com sucesso! ===")
 
-
+@log_transacao
 def criar_conta(numero_conta, clientes, contas):
     cpf = input("Informe o CPF do cliente: ")
     cliente = filtrar_cliente(cpf, clientes)
@@ -298,7 +348,7 @@ def criar_conta(numero_conta, clientes, contas):
     contas.append(conta)
     cliente.contas.append(conta)
 
-    print("\n=== Conta criada com sucesso! ===")
+    #print("\n=== Conta criada com sucesso! ===")
 
 
 def listar_contas(contas):
@@ -310,6 +360,13 @@ def listar_contas(contas):
 def main():
     clientes = []
     contas = []
+    
+    clientes.append(PessoaFisica(nome="Shoiti", data_nascimento="0000", cpf="0",    endereco="0000"))
+    numero_conta = len(contas) + 1
+    criar_conta(numero_conta, clientes, contas)
+    operacao(clientes, "d")
+    operacao(clientes, "s")
+    
 
     while True:
         opcao = menu()
@@ -336,5 +393,6 @@ def main():
         else:
             print("\n@@@ Operação inválida, por favor selecione novamente a operação desejada. @@@")
 
-
+    
+    
 main()
