@@ -2,6 +2,11 @@ import textwrap
 from abc import ABC, abstractmethod
 from datetime import datetime
 import functools
+from pathlib import Path
+import pytz
+import os
+
+ROOT_PATH = Path(os.getcwd())
 
 
 class Cliente:
@@ -27,6 +32,8 @@ class PessoaFisica(Cliente):
         self.data_nascimento = data_nascimento
         self.cpf = cpf
 
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__}: ('{self.cpf}')>"
 
 class Conta:
     def __init__(self, numero, cliente):
@@ -115,6 +122,9 @@ class ContaCorrente(Conta):
             return super().sacar(valor)
 
         return False
+    
+    def __repr__(self):
+        return f"<{self.__class__.__name__}: ('{self.agencia}', '{self.numero}', '{self.cliente.nome}')>"
 
     def __str__(self):
         return f"""\
@@ -127,18 +137,24 @@ class ContaCorrente(Conta):
 class ContaIterador:
     def __init__(self, contas:list) -> None:
         self.contas=contas
-        self.contador=0
+        self._contador=0
         
     def __iter__(self):
         return self
     
     def __next__(self):
         try:
-            conta = self.contas[self.contador]
-            self.contador += 1
-            return conta 
+            conta = self.contas[self._contador]
+            return f"""\
+            Agência:\t{conta.agencia}
+            C/C:\t\t{conta.numero}
+            Titular:\t{conta.cliente.nome}
+            Saldo: \tR$ {conta.saldo:.2f}
+        """ 
         except IndexError:
             raise StopIteration
+        finally:
+            self._contador += 1
     
 
 class Historico:
@@ -154,7 +170,7 @@ class Historico:
             {
                 "tipo": transacao.__class__.__name__,
                 "valor": transacao.valor,
-                "data": datetime.now().strftime("%d-%m-%Y %H:%M:%S"),
+                "data": datetime.now(pytz.timezone("America/Sao_Paulo")).strftime("%d-%m-%Y %H:%M:%S"),
             }
         )
 
@@ -222,23 +238,42 @@ def validar_valor(valor):
 def log_transacao(func):
     @functools.wraps(func)
     def envelope(*args,**kwargs):
-        func(*args, **kwargs)
-        def nome_operacao(nome_func):
-            match nome_func:
-                case "criar_conta":
-                    return "Criação de nova conta concluído"
-                case "criar_cliente":
-                    return "Criação de novo cliente concluído"
-                case "exibir_extrato":
-                    return "Extrato "
-                case "sacar":
-                    return "Saque "
-                case "depositar":
-                    return "Depósito "
+        resultado = func(*args, **kwargs)
+        data_hora = datetime.now(pytz.timezone("America/Sao_Paulo")).strftime("%Y-%m-%d %H:%M:%S")
+        
+        def incluir_log():
+    # Função que escreve as informações de log desejadas
+    # Exemplo:
+            log.write(f"[{data_hora}] Função '{func.__name__}' executada com argumentos {args} e {kwargs}. Retornou {resultado}\n")   
+
+        try:
+            # Tentar abrir o arquivo em modo de leitura para verificar se ele existe
+            with open(ROOT_PATH / "log.txt", "r", encoding="utf-8") as log:
+                pass
+        except FileNotFoundError:
+            print("Arquivo não encontrado, criando arquivo.")
+            # Criar o arquivo se não existir, e adicionar a primeira entrada de log
+            try:
+                with open(ROOT_PATH / "log.txt", "w", encoding="utf-8") as log:
+                    incluir_log()
+            except IOError as exc:
+                print("Erro ao criar o arquivo: " + str(exc))
+
+        # Adicionar novas entradas de log sem apagar o conteúdo existente
+        try:
+            with open(ROOT_PATH / "log.txt", "a", encoding="utf-8") as log:
+                incluir_log()
+        except IOError as exc:
+            print("Erro ao adicionar no arquivo: " + str(exc))
+                 
+                       
+        # TODO: alterar a implementação para salvar em arquivo.
+        # f"[{data_hora}] Função '{func.__name__}' executada com argumentos {args} e {kwargs}. Retornou {result}\n"
         print("\n")
         print("=" *60)
-        print(f"{nome_operacao(func.__name__)} em: {datetime.now().strftime("%d-%m-%Y %H:%M:%S")}")
+        print(f"{func.__name__.upper()} em: {data_hora}")
         print("=" *60)   
+        return resultado
     return envelope
     
 
@@ -349,16 +384,19 @@ def exibir_extrato(clientes):
                     print("\nApenas depósitos:") 
                     for transacao in obter_transacoes(tipo=Deposito):
                         print(f"\n{transacao['tipo']}:\n\tR$ {transacao['valor']:.2f} \t{transacao['data']}")
+                    break
                 case "s":
                     print(cabecalho)
                     print("\nApenas saques:") 
                     for transacao in obter_transacoes(tipo=Saque): 
                         print(f"\n{transacao['tipo']}:\n\tR$ {transacao['valor']:.2f} \t{transacao['data']}")
+                    break
                 case "t":
                     print(cabecalho)
                     print("Todas as transações:") 
                     for transacao in obter_transacoes(): 
                         print(f"\n{transacao['tipo']}:\n\tR$ {transacao['valor']:.2f} \t{transacao['data']}")
+                    break
                 case "q":
                     break
                 case _:
@@ -404,9 +442,6 @@ def criar_conta(numero_conta, clientes, contas):
 
 
 def listar_contas(contas):
-    #for conta in contas:
-    #    print("=" * 100)
-    #    print(textwrap.dedent(str(conta)))
     for conta in ContaIterador(contas):
         print("=" * 70)
         print(textwrap.dedent(str(conta)))
