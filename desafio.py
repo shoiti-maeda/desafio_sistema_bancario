@@ -235,44 +235,28 @@ def validar_valor(valor):
     valor=float(valor)
     return(valor)
 
+def incluir_log(func, data_hora, args, kwargs, resultado):
+    # Filtrando argumentos para evitar acúmulo de listas mutáveis no log
+    args_formatados = [str(arg) if not isinstance(arg, list) else f"[{len(arg)} itens]" for arg in args]
+    kwargs_formatados = {k: (str(v) if not isinstance(v, list) else f"[{len(v)} itens]") for k, v in kwargs.items()}
+
+    try:
+        with open(ROOT_PATH / "log.txt", "a", encoding="utf-8") as log:
+            log.write(f"[{data_hora}] Função '{func.__name__}' executada com argumentos {args_formatados} e {kwargs_formatados}. Retornou {resultado}\n")
+    except IOError as exc:
+        print("Erro ao adicionar no arquivo: " + str(exc))
+        
 def log_transacao(func):
     @functools.wraps(func)
-    def envelope(*args,**kwargs):
+    def envelope(*args, **kwargs):
         resultado = func(*args, **kwargs)
         data_hora = datetime.now(pytz.timezone("America/Sao_Paulo")).strftime("%Y-%m-%d %H:%M:%S")
-        
-        def incluir_log():
-    # Função que escreve as informações de log desejadas
-    # Exemplo:
-            log.write(f"[{data_hora}] Função '{func.__name__}' executada com argumentos {args} e {kwargs}. Retornou {resultado}\n")   
+        incluir_log(func, data_hora, args, kwargs, resultado)
 
-        try:
-            # Tentar abrir o arquivo em modo de leitura para verificar se ele existe
-            with open(ROOT_PATH / "log.txt", "r", encoding="utf-8") as log:
-                pass
-        except FileNotFoundError:
-            print("Arquivo não encontrado, criando arquivo.")
-            # Criar o arquivo se não existir, e adicionar a primeira entrada de log
-            try:
-                with open(ROOT_PATH / "log.txt", "w", encoding="utf-8") as log:
-                    incluir_log()
-            except IOError as exc:
-                print("Erro ao criar o arquivo: " + str(exc))
-
-        # Adicionar novas entradas de log sem apagar o conteúdo existente
-        try:
-            with open(ROOT_PATH / "log.txt", "a", encoding="utf-8") as log:
-                incluir_log()
-        except IOError as exc:
-            print("Erro ao adicionar no arquivo: " + str(exc))
-                 
-                       
-        # TODO: alterar a implementação para salvar em arquivo.
-        # f"[{data_hora}] Função '{func.__name__}' executada com argumentos {args} e {kwargs}. Retornou {result}\n"
         print("\n")
-        print("=" *60)
+        print("=" * 60)
         print(f"{func.__name__.upper()} em: {data_hora}")
-        print("=" *60)   
+        print("=" * 60)   
         return resultado
     return envelope
     
@@ -426,6 +410,7 @@ def criar_cliente(clientes):
     #print("\n=== Cliente criado com sucesso! ===")
 
 @log_transacao
+
 def criar_conta(numero_conta, clientes, contas):
     cpf = input("Informe o CPF do cliente: ")
     cliente = filtrar_cliente(cpf, clientes)
@@ -437,6 +422,18 @@ def criar_conta(numero_conta, clientes, contas):
     conta = ContaCorrente.nova_conta(cliente=cliente, numero=numero_conta)
     contas.append(conta)
     cliente.contas.append(conta)
+
+#def criar_conta(numero_conta, clientes, contas):
+#    cpf = input("Informe o CPF do cliente: ")
+#    cliente = filtrar_cliente(cpf, clientes)
+#
+#    if not cliente:
+#        print("\n@@@ Cliente não encontrado, fluxo de criação de conta encerrado! #@@@")
+#        return
+#
+#    conta = ContaCorrente.nova_conta(cliente=cliente, numero=numero_conta)
+#    contas.append(conta)
+#    cliente.contas.append(conta)
 
     #print("\n=== Conta criada com sucesso! ===")
 
@@ -451,11 +448,11 @@ def main():
     clientes = []
     contas = []
     
-    clientes.append(PessoaFisica(nome="Shoiti", data_nascimento="0000", cpf="0",    endereco="0000"))
-    numero_conta = len(contas) + 1
-    criar_conta(numero_conta, clientes, contas)
-    operacao(clientes, "d")
-    operacao(clientes, "s")
+    criar_cliente(clientes)
+    criar_cliente(clientes)
+    criar_cliente(clientes)
+    
+
     
 
     while True:
